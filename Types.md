@@ -139,4 +139,95 @@ TypeScript will only allow you to do things with the union if that thing is vali
 
 * Key distinction is that a type cannot be re-opened to add new properties vs an interface which is always extendable.
 
+| Interface | Type |
+|---------- | --------|
+| **Extending an Interface** | **Extending a type via intersections** |
+
+
+### Literal Types
+---
+
+* Literal types aren't very valuable but by combining literals into unions, you can express a much more useful concept - for example, functions that only accept a certain set of known values
+
+* For eg. 
+```
+function printText(s: string, alignment: "left" | "right" | "center") {
+  // ...
+}
+printText("Hello, world", "left");
+printText("G'day, mate", "centre");
+//Argument of type '"centre"' is not assignable to parameter of type //'"left" | "right" | "center"'.
+```
+
+### Literal Inference
+---
+
+* When you initialize a variable with an object, TypeScript assumes that the properties of that object might change values later. For example, if you wrote code like this
+
+```
+const obj = { counter: 0 };
+if (someCondition) {
+  obj.counter = 1;
+}
+```
+* TypeScript doesn’t assume the assignment of 1 to a field which previously had 0 is an error. Another way of saying this is that obj.counter must have the type number, not 0, because types are used to determine both reading and writing behavior
+
+* Same Applies to Strings for eg.
+
+```
+const req = { url: "https://example.com", method: "GET" };
+handleRequest(req.url, req.method);
+//Argument of type 'string' is not assignable to parameter of type '"GET" | "POST"'.
+```
+* In the above example req.method is inferred to be string, not "GET". Because code can be evaluated between the creation of req and the call of handleRequest which could assign a new string like "GUESS" to req.method, TypeScript considers this code to have an error
+
+* Solution: 
+
+```
+// Change 1:
+const req = { url: "https://example.com", method: "GET" as "GET" };
+// Change 2
+handleRequest(req.url, req.method as "GET");
+// Change 3
+const req = { url: "https://example.com", method: "GET" } as const;
+handleRequest(req.url, req.method);
+```
+* Change 1 means “I intend for req.method to always have the literal type "GET"”, preventing the possible assignment of "GUESS" to that field after. Change 2 means “I know for other reasons that req.method has the value "GET"“.
+
+* The as const suffix acts like const but for the type system, ensuring that all properties are assigned the literal type instead of a more general version like string or number
+
+### `strictNullChecks` off
+---
+
+* With strictNullChecks off, values that might be `null` or `undefined` can still be accessed normally, and the values `null` and `undefined` can be assigned to a property of any type. This is similar to how languages without null checks (e.g. C#, Java) behave. The lack of checking for these values tends to be a major source of bugs; we always recommend people turn strictNullChecks on if it’s practical to do so in their codebase.
+
+### `strictNullChecks` on
+---
+With strictNullChecks on, when a value is `null` or `undefined`, you will need to test for those values before using methods or properties on that value. Just like checking for `undefined` before using an optional property, we can use narrowing to check for values that might be `null`
+
+### Less Common Primitives
+---
+
+* New primitive Introduced in JS since ES2020. Used for storing very large Integers. `BigInt`
+
+```
+// Creating a bigint via the BigInt function
+const oneHundred: bigint = BigInt(100);
+ 
+// Creating a BigInt via the literal syntax
+const anotherHundred: bigint = 100n;
+```
+* `symbol` - This primitive is used to create a globally unique reference via the function `Symbol()`:
+
+```
+const firstName = Symbol("name"); // creates new reference 
+const secondName = Symbol("name"); // creates another new reference
+ 
+if (firstName === secondName) {
+//This condition will always return 'false' since the types 'typeof //firstName' and 'typeof secondName' have no overlap.
+  // Can't ever happen
+}
+```
+
+
 
